@@ -1,0 +1,215 @@
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>SPA</title>
+	<link rel="stylesheet" type="text/css" href="style.css"/>
+	
+</head>
+<body>
+	<span id="data" data-user="guest"></span>
+	<header id="Header">
+		Header header header
+	</header>
+	<div id="login"> </div>
+	<nav id="tabs">
+		<ul>
+			<li id="li_home" class="navLi"><a href="#home">Home</a></li>
+			<li id="li_register" class="navLi"><a href="#register">Register</a></li>
+			<li id="li_login" class="navLi"><a href="#login"> Login </a></li>
+			<li id="li_about" class="navLi"><a href="#about"> About us </a></li>
+			<li id="li_work" class="navLi"><a href="#work"> Work </a></li>
+			
+		</ul>
+	</nav>
+	<article id="main">
+		<div id="Home" class="page">
+			<p> Some Text
+			<p> Some Text
+		</div>
+		<div id="Register" class="page">
+			<form id="inputForm" method="POST">
+				<div class="form-row">
+					<label> First Name </label>
+					<input type="text" name="FirstName" placeholder="First Name"/>
+				</div>
+				<div class="form-row">
+					<label> Second Name </label>
+					<input type="text" name="SecondName" placeholder="Second Name"/>
+				</div>
+				<div class="form-row">
+					<label> Login </label>
+					<input type="text" name="Login" placeholder="Login"/>
+				</div>
+				<div class="form-row">
+					<label> Password </label>
+					<input type="password" name="Password" placeholder="Password"/>
+				</div>
+				<div class="form-row">
+					<button type="submit"> Send </button>
+				</div>
+				<input type="hidden" name="type" value="registration"/>
+			</form>
+		</div>
+		<div id="About" class="page">
+			<h2> Some information about our company </h2>
+			<div> Text text text </div>
+			<h2> Contact information </h2>
+			<div> text text text </div>
+		</div>
+		<div id="Login" class="page">
+			<form id="Login" method="POST">
+				<div class="form-row">
+					<label> Login </label>
+					<input type="text" name="Login" placeholder="Login"/>
+				</div>
+				<div class="form-row">
+					<label> Password </label>
+					<input type="text" name="Password" placeholder="Password"/>
+				</div>
+				<div class="form-row">
+					<button type="submit"> Login </button>
+				</div>
+				<input type="hidden" name="type" value="login"/>
+			</form>
+		</div>
+		<div id="Work" class="page">
+			<button id="cardBtn" onclick="Card()">Card</button>
+			<div id="Card"></div>
+		</div>
+	</article>
+	<div id="enter">
+		<!--input id="uname" type="text" placeholder="name"/-->
+		<button id="loginBtn" onclick="Login()">Login</button>
+		<button id="logoutBtn" onclick="Logout()">Logout</button>
+		
+	</div>
+</body>
+<script type="text/javascript">
+	const xhttp = new XMLHttpRequest();
+
+	//check cookies	
+	if ( document.cookie.split(";").some((item) => item.trim().startsWith('user'))  ) 
+
+	{
+		const cookieValue = document.cookie
+  			.split("; ")
+  			.find((row) => row.startsWith("user="))
+  			?.split("=")[1];
+
+		document.getElementById("data").setAttribute("data-user",cookieValue);
+	}
+
+	//check user
+
+	var user = document.getElementById("data").getAttribute("data-user");
+	if(user!="guest")
+	{
+		document.getElementById("li_register").style.display = 'none';
+		document.getElementById("li_login").style.display = 'none';
+		document.getElementById("loginBtn").style.display = 'none';
+		document.getElementById("logoutBtn").style.display = 'inline';
+		document.getElementById("login").innerText = user;
+
+	}
+	else
+	{
+		document.getElementById("logoutBtn").style.display = 'none';
+	}
+
+	function Login(){
+		window.location.href = "#login";
+	}
+
+	function Logout(){
+		document.getElementById("data").setAttribute("data-user","guest");
+
+		//delete cookie
+		const cookies = document.cookie.split(";");
+    	for (let i = 0; i < cookies.length; i++) {
+        	const cookie = cookies[i];
+        	const eqPos = cookie.indexOf("=");
+        	const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+        	document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    	}
+
+    	document.getElementById("li_register").style.display = 'inline';
+		document.getElementById("li_login").style.display = 'inline';
+		document.getElementById("loginBtn").style.display = 'inline';
+		document.getElementById("logoutBtn").style.display = 'none';
+		document.getElementById("login").innerText = "";
+	}
+
+
+
+	function Card(){
+		let unameText = document.getElementById("data").getAttribute("data-user");
+		console.log("User name = " + unameText);
+		xhttp.open("POST","/card");
+		xhttp.setRequestHeader("Content-type","application/json");
+		xhttp.send(JSON.stringify({username:unameText}));
+	}
+
+	xhttp.onreadystatechange = function(){
+		console.log('Response' + xhttp.responseText);
+		if(this.readyState == 4 && this.status == 200){
+			document.getElementById("Card").innerHTML = xhttp.responseText;
+			/*res = JSON.parse(xhttp.responseText);
+			document.getElementById("uname").className += "invisible";
+			document.getElementById("loginBtn").className += "invisible";
+			document.getElementById("login").innerHTML = "User: " + res.username;*/
+		}
+	}
+
+
+
+	window.onhashchange = function(){
+		render(window.location.hash);
+	}
+
+	function render(hashKey){
+		
+		let pages = document.querySelectorAll(".page");
+		for(let i=0; i<pages.length; ++i){
+			pages[i].style.display = "none";
+		}
+
+		let navLis = document.querySelectorAll(".navLi");
+		for(let i=0; i<navLis.length; ++i)
+			navLis[i].classList.remove("active");
+
+		switch(hashKey){
+		case "": 
+			pages[0].style.display = "block";
+			document.getElementById("li_home").classList.add("active");
+		break;
+		case "#home": 
+			pages[0].style.display = "block";
+			document.getElementById("li_home").classList.add("active");
+		break;
+		case "#register": 
+			pages[1].style.display = "block";
+			document.getElementById("li_register").classList.add("active");
+		break;
+		case "#about": 
+			pages[2].style.display = "block";
+			document.getElementById("li_about").classList.add("active");
+		break;
+		case "#login":
+			pages[3].style.display = "block";
+			document.getElementById("loginBtn").className += "invisible";
+			document.getElementById("li_login").classList.add("active");
+		break;
+		case "#work":
+			pages[4].style.display = "block";
+			document.getElementById("li_work").classList.add("active");
+		break;
+		default: 
+			pages[0].style.display = "block";
+			document.getElementById("li_home").classList.add("active");
+		
+		}
+	}
+	
+</script>
+</html>

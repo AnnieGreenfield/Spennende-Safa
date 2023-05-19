@@ -1,0 +1,63 @@
+body{
+	display: grid;
+	grid-template-areas: 
+	"header header log"
+	"nav nav ads"
+	"article article article";
+	grid-template-rows: 60px 60px 1fr;
+	grid-template-columns: 20% 1fr 200px;
+	grid-gap: 10px;
+	height: 100vh;
+	margin: 0;
+}
+
+header, article, nav, div {
+	padding: 20px;
+	background: lightgrey;
+}
+
+#Header{
+	grid-area: header;
+	font-family: "Georgia";
+	font-style: normal;
+	font-size: 26px;
+	text-align: center;
+}
+
+#tabs{
+	grid-area: nav;
+	display: flex;
+	align-items: center;
+}
+
+#main{grid-area: article;}
+#login{ grid-area: log; }
+#enter{ grid-area:ads; }
+#uname{ width:80px; }
+li,input,button { display: inline; }
+li {
+	border: 1px solid grey;
+	padding: 10px;
+	margin: 10px;
+}
+.page{display:none;}
+.active{border: 0px;}
+a{text-decoration: none;}
+a:hover{color: grey;}
+.invisible{display: none;}
+.form-row{
+	display: flex;
+	justify-content: flex-end;
+	padding: .5em;
+}
+.form-row > label{
+	padding: .5em 1em .5em 0;
+	flex: 1;
+}
+.form-row > input{
+	flex: 2;
+}
+.form-row > input, 
+.form-row > button {
+	padding: .5em;
+}
