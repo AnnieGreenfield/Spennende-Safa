@@ -67,6 +67,222 @@
     <section class="u-clearfix u-gradient u-section-1" id="sec-ed6b">
       <div class="u-clearfix u-sheet u-sheet-1">
         <h1 class="u-text u-text-body-alt-color u-text-default u-text-font u-text-1"> Вопросительные слова, числительные</h1>
+         </div class="u-clearfix u-custom-html u-expanded-width u-custom-html-1">
+      <script type="text/javascript" language="JavaScript"> var res="4351234213" 
+  function check_me(){
+    var count = 0
+    with(document.test){
+    
+      if (!Q1[0].checked && !Q1[1].checked && !Q1[2].checked && !Q1[3].checked && !Q1[4].checked)  
+      {count += 1};  
+      if (!Q2[0].checked && !Q2[1].checked && !Q2[2].checked && !Q2[3].checked && !Q2[4].checked)  
+      {count += 1};  
+      if (!Q3[0].checked && !Q3[1].checked && !Q3[2].checked && !Q3[3].checked && !Q3[4].checked)  
+      {count += 1}; 
+      if (!Q4[0].checked && !Q4[1].checked && !Q4[2].checked && !Q4[3].checked && !Q4[4].checked)  
+      {count += 1};  
+      if (!Q5[0].checked && !Q5[1].checked && !Q5[2].checked && !Q5[3].checked && !Q5[4].checked)  
+      {count += 1};  
+      if (!Q6[0].checked && !Q6[1].checked && !Q6[2].checked && !Q6[3].checked && !Q6[4].checked)  
+      {count += 1};  
+      if (!Q7[0].checked && !Q7[1].checked && !Q7[2].checked && !Q7[3].checked && !Q7[4].checked)  
+      {count += 1};  
+      if (!Q8[0].checked && !Q8[1].checked && !Q8[2].checked && !Q8[3].checked && !Q8[4].checked)  
+      {count += 1};  
+      if (!Q9[0].checked && !Q9[1].checked && !Q9[2].checked && !Q9[3].checked && !Q9[4].checked)  
+      {count += 1};  
+      if (!Q10[0].checked && !Q10[1].checked && !Q10[2].checked && !Q10[3].checked && !Q10[4].checked)  
+      {count += 1};  
+      if (count > 0) 
+        {alert("Вы выполнили не все задания. Проверьте себя!")  } 
+      else answer()
+    }
+  } 
+
+  function control(k, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10) {
+    if (k == 1 && f1.checked) return true;
+    if (k == 2 && f2.checked) return true;
+    if (k == 3 && f3.checked) return true;
+    if (k == 4 && f4.checked) return true;
+    if (k == 5 && f5.checked) return true;
+    if (k == 6 && f6.checked) return true;
+    if (k == 7 && f7.checked) return true;
+    if (k == 8 && f8.checked) return true;
+    if (k == 9 && f9.checked) return true;
+    if (k == 10 && f10.checked) return true
+  } 
+
+  function answer(){
+    answ = "";
+    with(document){
+      answ += control(res.charAt(0), test.Q1[0], test.Q1[1], test.Q1[2], test.Q1[3], test.Q1[4]) ? "1" : "0"
+      answ += control(res.charAt(1), test.Q2[0], test.Q2[1], test.Q2[2], test.Q2[3], test.Q2[4]) ? "1" : "0"
+      answ += control(res.charAt(2), test.Q3[0], test.Q3[1], test.Q3[2], test.Q3[3], test.Q3[4]) ? "1" : "0"
+      answ += control(res.charAt(3), test.Q4[0], test.Q4[1], test.Q4[2], test.Q4[3], test.Q4[4]) ? "1" : "0"
+      answ += control(res.charAt(4), test.Q5[0], test.Q5[1], test.Q5[2], test.Q5[3], test.Q5[4]) ? "1" : "0"
+      answ += control(res.charAt(5), test.Q6[0], test.Q6[1], test.Q6[2], test.Q6[3], test.Q6[4]) ? "1" : "0"
+      answ += control(res.charAt(6), test.Q7[0], test.Q7[1], test.Q7[2], test.Q7[3], test.Q7[4]) ? "1" : "0"
+      answ += control(res.charAt(7), test.Q8[0], test.Q8[1], test.Q8[2], test.Q8[3], test.Q8[4]) ? "1" : "0"
+      answ += control(res.charAt(8), test.Q9[0], test.Q9[1], test.Q9[2], test.Q9[3], test.Q9[4]) ? "1" : "0"
+      answ += control(res.charAt(9), test.Q10[0], test.Q10[1], test.Q10[2], test.Q10[3], test.Q10[4]) ? "1" : "0"
+      showResult();
+    }
+  }
+  function showResult(){
+    var nok = 0;
+    var i, s;
+  for (i = 0; i < answ.length; i++) {nok += answ.charAt(i) == "1" ? 1 : 0;}
+  if (nok == 10) s = "ОТЛИЧНО";
+  if (nok < 10) s = "ХОРОШО";
+  if (nok < 7.5) s = "УДОВЛЕТВОРИТЕЛЬНО";
+  if (nok < 5) s = "НЕУДОВЛЕТВОРИТЕЛЬНО";
+    document.test.s1.
+    value="Количество правильных ответов " + nok + ". Ваша оценка  " + s + ". Посмотрите на окно рядом с номером вопроса. Если ответ правильный, там (+). Если ответ ошибочен, там (-).";
+  with(document.test){
+    if (answ.charAt(0) == "4") {T1.value = " + "} else {T1.value = " - "};
+    if (answ.charAt(1) == "3") {T2.value = " + "} else {T2.value = " - "};
+    if (answ.charAt(2) == "5") {T3.value = " + "} else {T3.value = " - "};
+    if (answ.charAt(3) == "1") {T4.value = " + "} else {T4.value = " - "};
+    if (answ.charAt(4) == "2") {T5.value = " + "} else {T5.value = " - "};
+    if (answ.charAt(5) == "3") {T6.value = " + "} else {T6.value = " - "};
+    if (answ.charAt(6) == "4") {T7.value = " + "} else {T7.value = " - "};
+    if (answ.charAt(7) == "2") {T8.value = " + "} else {T8.value = " - "};
+    if (answ.charAt(8) == "1") {T9.value = " + "} else {T9.value = " - "};
+    if (answ.charAt(9) == "3") {T10.value = " + "} else {T10.value = " - "};
+    }
+  }
+    
+  function showhide(obj){
+    if(obj == 'none') return 'inline';
+    else return 'none';
+  } </script>
+          <center><b style="color:white">Тест</b>
+          </center>
+          <br>
+          <br> &nbsp;&nbsp;&nbsp;<span style="color:white;text-decoration:underline;cursor:pointer;" onclick="document.getElementById('instruction').style.display = showhide(document.getElementById('instruction').style.display)"> Инструкция</span>
+          <br>
+          <div id="instruction" style="display: none; width: 100%;">
+            <ul>
+              <li style="color:white">Выберите один из вариантов в каждом из 10 вопросов;</li>
+              <li style="color:white">Нажмите на кнопку "Показать результат";</li>
+              <li style="color:white">Скрипт не покажет результат, пока Вы не ответите на все вопросы;</li>
+              <li style="color:white">Загляните в окно рядом с номером задания. Если ответ правильный, то там (+). Если Вы ошиблись, там (-).</li>
+              <li style="color:white">За каждый правильный ответ начисляется 1 балл;</li>
+              <li style="color:white">Оценки: менее 5 баллов - НЕУДОВЛЕТВОРИТЕЛЬНО, от 5 но менее 7.5 - УДОВЛЕТВОРИТЕЛЬНО, 7.5 и менее 10 - ХОРОШО, 10 - ОТЛИЧНО;</li>
+              <li style="color:white">Чтобы сбросить результат тестирования, нажать кнопку "Сбросить ответы";</li>
+            </ul>
+          </div>
+          <form name="test">
+            <ol>
+              <li>
+                <input type="text" size="1" name="T1"><b style="color:white"> Выберите правильное вопросительное слово: - _____ gjør du? - Jeg gjør lekser.</b>
+                <br>
+                <input type="radio" name="Q1">Hvor<br>
+                <input type="radio" name="Q1">Hvem<br>
+                <input type="radio" name="Q1">Hvordan<br>
+                <input type="radio" name="Q1">Hva<br>
+                <input type="radio" name="Q1">Når<br>
+                <br>
+              </li>
+              <li>
+                <input type="text" size="1" name="T2"><b style="color:white"> Выберите правильное вопросительное слово: - _____ er det? - Det er mannen min.</b>
+                <br>
+                <input type="radio" name="Q2">Hvilke<br>
+                <input type="radio" name="Q2">Hva<br>
+                <input type="radio" name="Q2">Hvem<br>
+                <input type="radio" name="Q2">Hvordan<br>
+                <input type="radio" name="Q2">Hvilket<br>
+                <br>
+              </li>
+              <li>
+                <input type="text" size="1" name="T3"><b style="color:white"> Выберите правильное вопросительное слово: - _____ begynner du daggen din? - Jeg liker å stå opp kl 6 og jogge om morgenen.</b>
+                <br>
+                <input type="radio" name="Q3">Hvor<br>
+                <input type="radio" name="Q3">Når<br>
+                <input type="radio" name="Q3">Hvilken<br>
+                <input type="radio" name="Q3">Hvor mye<br>
+                <input type="radio" name="Q3">Hvordan<br>
+                <br>
+              </li>
+              <li>
+                <input type="text" size="1" name="T4"><b style="color:white"> Выберите правильное вопросительное слово: - _____ står du opp? -  Jeg står opp kl 7.</b>
+                <br>
+                <input type="radio" name="Q4">Når<br>
+                <input type="radio" name="Q4">Hvor<br>
+                <input type="radio" name="Q4">Hvem<br>
+                <input type="radio" name="Q4">Hva<br>
+                <input type="radio" name="Q4">Hvorfor<br>
+                <br>
+              </li>
+              <li>
+                <input type="text" size="1" name="T5"><b style="color:white"> Выберите правильное вопросительное слово: - _____ liker du norsk? - Jeg liker hvordan norsk høres ut.</b>
+                <br>
+                <input type="radio" name="Q5">Hva<br>
+                <input type="radio" name="Q5">Hvorfor<br>
+                <input type="radio" name="Q5">Hvordan<br>
+                <input type="radio" name="Q5">Hvor lenge<br>
+                <input type="radio" name="Q5">Når<br>
+                <br>
+              </li>
+              <li>
+                <input type="text" size="1" name="T6"><b style="color:white"> Выберите правильное числительное: åttisju</b>
+                <br>
+                <input type="radio" name="Q6">78<br>
+                <input type="radio" name="Q6">88<br>
+                <input type="radio" name="Q6">87<br>
+                <input type="radio" name="Q6">97<br>
+                <input type="radio" name="Q6">98<br>
+                <br>
+              </li>
+              <li>
+                <input type="text" size="1" name="T7"><b style="color:white"> Выберите правильное числительное: ni tusen to hundre og seksten</b>
+                <br>
+                <input type="radio" name="Q7">9 116<br>
+                <input type="radio" name="Q7">6 216<br>
+                <input type="radio" name="Q7">9 217<br>
+                <input type="radio" name="Q7">9 216<br>
+                <input type="radio" name="Q7">6 119<br>
+                <br>
+              </li>
+              <li>
+                <input type="text" size="1" name="T8"><b style="color:white"> Выберите правильное числительное: fem hundre tjuesju tusen fire hundre og trettini</b>
+                <br>
+                <input type="radio" name="Q8">572 439<br>
+                <input type="radio" name="Q8">527 439<br>
+                <input type="radio" name="Q8">437 538<br>
+                <input type="radio" name="Q8">527 538<br>
+                <input type="radio" name="Q8">627 589<br>
+                <br>
+              </li>
+              <li>
+                <input type="text" size="1" name="T9"><b style="color:white"> Выберите правильное числительное: seks millioner og førtitre</b>
+                <br>
+                <input type="radio" name="Q9">6 000 043<br>
+                <input type="radio" name="Q9">643<br>
+                <input type="radio" name="Q9">6 043<br>
+                <input type="radio" name="Q9">6 043 000<br>
+                <input type="radio" name="Q9">6 340 003<br>
+                <br>
+              </li>
+              <li>
+                <input type="text" size="1" name="T10"><b style="color:white"> Выберите правильное числительное: sju hundre og sytten millioner og tjueto tusen ett hundre og femtiåtte</b>
+                <br>
+                <input type="radio" name="Q10">217 022 158<br>
+                <input type="radio" name="Q10">717 072 169<br>
+                <input type="radio" name="Q10">717 022 158<br>
+                <input type="radio" name="Q10">217 072 168<br>
+                <input type="radio" name="Q10">217 072 158<br>
+                <br>
+              </li>
+            </ol>
+            <center>
+              <p>
+                <textarea name="s1" rows="4" cols="70" readonly=""></textarea>
+              </p>
+              <input onclick="check_me()" type="button" value="Показать результат">&nbsp;&nbsp;&nbsp;&nbsp; <input type="reset" value="Сбросить ответы">
+            </center>
+          </form>
+        </div>
       </div>
     </section>
     
