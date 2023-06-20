@@ -32,6 +32,8 @@
 }
 
 .u-section-1 .u-btn-1 {
+ /* width: 338px;
+  height: 30px;*/
   font-size: 0.875rem;
   letter-spacing: 1px;
   transition-duration: 0.5s;
@@ -41,7 +43,7 @@
   border-style: solid;
   font-weight: 700;
   margin: 0 -175px 0 auto;
-  padding: 30px 338px 31px 337px;
+  padding: 30px 90px 31px 337px;
 }
 
 .u-section-1 .u-container-layout-2 {
@@ -58,7 +60,7 @@
   border-style: solid;
   font-weight: 700;
   margin: 0 -175px 0 auto;
-  padding: 30px 338px 31px 337px;
+  padding: 30px 310px 31px 337px;
 }
 
 .u-section-1 .u-container-layout-3 {
@@ -75,7 +77,7 @@
   border-style: solid;
   font-weight: 700;
   margin: 0 -175px 0 auto;
-  padding: 30px 338px 31px 337px;
+  padding: 30px 540px 31px 337px;
 }
 
 @media (max-width: 1199px) {
