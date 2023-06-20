@@ -1,0 +1,742 @@
+/****************************************************
+ * A script used in the LEXIN application,          *
+ * to read dictionary article fields                *
+ * with the leseWEB speech synthesis from VoiceASP  *
+ *                                                  *
+ * The main function tts() of the script            *
+ * is called from click events in the html.         *
+ * (tts = Tekst-til-Tale-Syntese                    *
+ * = Text-to-Speech Synthesis)
+ *                                                  *
+ * Written by Ã˜ystein Reigem long ago,              *
+ * with a major update 2021-05-18:                  *
+ *   - Handle some changes and errors in the html,  *
+ *     introduced when TietoEvry rewrote LEXIN      *
+ *   - Clean up code and comments                   *
+ ****************************************************/
+
+// the text (field value) to be read is converted to a readable version,
+// which is stored in an element with the following id
+const readableElId = "listingblock1";
+
+function inflect(word, ending) {
+
+    // (1) join e.g word "samling" and ending "a" to make "samlinga".
+    // (2) join e.g word "messe" and ending "a" to make "messa" and not "messea".
+
+    // note: there exist a few words were the "e" should have been kept and (2) will make an error.
+    // but there's no easy solution to that
+
+    if (word.substr(word.length - 1) == "e" && ending == "a") {
+        return word.substr(0, word.length - 1) + ending;
+    } else {
+        return word + ending;
+    }
+
+}
+
+function makeReadableLemAlt(text) {
+
+    // the entry word field ('lem') sometimes contain alternative words, e.g, 'vite (vita)'.
+    // the above example should be read like 'vite. eller vita.',
+    // where 'eller' means 'or', and the full stop makes it sound like two sentences,
+    // with a pause in the reading.
+    // the parentheses themselves should not be read
+
+    // even the field for alternative words ('alt') might have extra alternative words (?)
+
+    // split the string at space(s) into separate words
+
+    const parts = text.split(" ");
+
+    // handle parentheses.
+    // make an array of parts that should be read with a pause between them
+
+    let newParts = [];
+    let parenLevel = 0;
+    let previousPart = "";
+    let part;
+    let rightParen;
+    let nextParenLevel;
+    for (let i in parts) {
+
+        part = parts[i];
+
+        if (part.substr(0, 1) == "(") {
+            // start a new part to make a pause.
+            // replace the left parenthesis with 'eller'.
+            newParts[newParts.length] = "eller";
+            part = part.substr(1);
+            parenLevel += 1;
+        }
+
+        rightParen = false;
+        if (part.substr(part.length - 1, 1) == ")") {
+            // strip the right parenthesis.
+            // must start a new part to make a pause. see code below
+            rightParen = true;
+            part = part.substr(0, part.length - 1);
+            nextParenLevel = parenLevel - 1;
+        } else {
+            nextParenLevel = parenLevel;
+        }
+
+        // append to previous part
+        if (newParts.length == 0) {
+            newParts[0] = part;
+        } else {
+            newParts[newParts.length - 1] += " " + part;
+        }
+
+        // 2011-09-16
+        if (rightParen) {
+            // now start a new part to make a pause
+            newParts[newParts.length] = "";
+        }
+
+        parenLevel = nextParenLevel;
+        previousPart = part;
+
+    }
+
+    // put full stop after each new part, to make a pause in the reading
+
+    newText = "";
+    for (let i in newParts) {
+        // (also skip empty parts, just in case. but perhaps they don't occur)
+        if (newParts[i].trim() != "") {
+            newText += newParts[i] + ".";
+            if (i < newParts.length - 1) {
+                newText += " ";
+            }
+        }
+    }
+
+    return newText;
+
+}
+
+function changeLiteralParenthesesToText(lang, text) {
+
+    let newText;
+    if (lang == "nn") {
+        newText = text.replace(/\( \)/, "venstreparentes og hÃ¸greparentes ");
+    } else {
+        newText = text.replace(/\( \)/, "venstreparentes og hÃ¸yreparentes ");
+    }
+    return newText;
+
+}
+
+// function for changing explanatory constructions
+//   '... (" ... ")'
+// and
+//   '... (Â« ... Â»)'
+// to
+//   '... (which means. ... )'
+// (but with norwegian text where it says 'which means').
+// make simplifying assumption: if both '("' and '")' occur their parentheses are paired.
+// furthermore: give up if more than one '("' or '")' occur
+function changeCertainQuotesInParenthesesToText(lang, text) {
+
+    let newText = text;
+
+    // simplify: change quotes so there is only one kind
+    newText = newText.replace('Â«', '"');
+    newText = newText.replace('Â»', '"');
+
+    // how many '("' are there?
+    // how many '")' are there?
+    const numLeft = newText.split('("').length - 1;
+    const numRight = newText.split('")').length - 1;
+
+    if ((numLeft == 1) && (numRight == 1)) {
+
+        if (lang == "nn") {
+            newText = newText.replace('\("', '(som tyder. ');
+        } else {
+            newText = newText.replace('\("', '(som betyr. ');
+        }
+
+        newText = newText.replace('"\)', '');
+
+    }
+
+    return newText;
+
+}
+
+function makeReadableMor(morEl, lang, text) {
+
+    // remove square brackets
+    let newText = text.replace(/^\[(.*)]$/, "$1");
+
+    if (newText != text) {
+
+        // square brackets were indeed removed, so it must be a 'mor' value
+
+        // the inflection field ('mor') sometimes contain alternative words,
+        // e.g, 'boken (el boka)', where the "el" is short for "eller", i.e, "or".
+        // the above example should be read like 'boken. eller boka.',
+        // where the full stop makes it sound like two sentences,
+        // with a pause in the reading.
+        // the parentheses themselves should not be read
+
+        // sometimes the inflection field will have incomplete words.
+        // example: in the article for bokmÃ¥l entry word "laste|bil"
+        // the inflection pattern is "-bilen -biler -bilene"
+        // but we want complete words to be read: "lastebilen lastebiler lastebilene".
+        // to piece together complete words we need the entry word value.
+        
+        // get the entry word value.
+        // maybe we first should check if we really need it (if we have incomplete words).
+        // but just get it anyway
+
+        // first find the element for the current article
+        const articleEl = morEl.closest('ul.search-table');
+        // then within that article element
+        // find the element that contains the entry word - in the correct language
+        const lemEl = articleEl.querySelector(`:scope dd[data-type='LEM'][lang='${lang}']`);
+
+        // extract the text and do some general cleanup
+        //let lemma = extractAndCleanFieldValue(lemEl);
+        let {text, origContent} = extractAndCleanFieldValue(lemEl); let lemma = text;   // TODO: when satisfied with testing use the above out-commented line instead
+                
+        // find the beginning of the entry word, e.g,
+        // "ABC-" from "ABC-bok"
+        // "barne" from "barne|bok"
+        // "x-y-" from "x-y-z"
+        // "xy-" from "x|y-z"
+        // "xy" from "x|y|z"
+        // "x-y" from "x-y|z",
+        // i.e, everything up to the last "-" or "|" -
+        // including the "-" but not the "|"
+        let beginningOfLemma = lemma;
+        let char;
+        for (let i = lemma.length - 1; i >= 0; i--) {
+            char = lemma.substr(i, 1);
+            if (char == "-") {
+                beginningOfLemma = lemma.substr(0, i + 1);   // include the hyphen
+                break;
+            } else if (char == "|") {
+                beginningOfLemma = lemma.substr(0, i);   // exclude the vertical bar
+                break;
+            }
+        }
+        beginningOfLemma = stripVerticalBar(beginningOfLemma);
+
+        // split the string at space(s) into separate words
+
+        let parts = newText.split(" ");
+
+        // make any incomplete words complete
+
+        let newParts = [];
+        for (let i in parts) {
+            if (parts[i].substr(0, 1) == "-") {
+                // incomplete word.
+                // (can't remember if the inflect() function is necessary here,
+                // or if a simple concatenation will do.
+                // but it causes no harm)
+                newParts[i] = inflect(beginningOfLemma, parts[i].substr(1));
+            } else {
+                newParts[i] = parts[i];
+            }
+        }
+        parts = newParts;
+
+        // handle parentheses and 'el' (short for 'eller', meaning 'or').
+        // inflection value example:
+        //   boken (el boka) bÃ¸ker bÃ¸kene
+
+        // (not sure if there exist values without the "el".
+        // but the function handles both cases)
+
+        // (the function is meant to handle nested parentheses too,
+        // but probably they don't occur)
+
+        // (in some fields there can be words with parentheses around their start or end (?),
+        // like "(hus)dyret". not sure if they occur in the inflection field.
+        // but when this function gets the value such parentheses have been removed already)
+
+        // handle parentheses.
+        // make an array of parts that should be read with a pause between them
+
+        newParts = [];
+        let parenLevel = 0;
+        let previousPart = "";
+        let part;
+        let rightParen;
+        for (i in parts) {
+
+            part = parts[i];
+
+            if (part.substr(0, 1) == "(") {
+                // skip the parenthesis, but start a new part
+                newParts[newParts.length] = "";
+                part = part.substr(1);
+                parenLevel += 1;
+            } else if (parenLevel > 0 && part != "el" && previousPart != "el") {
+                // append "el" to previous part
+                newParts[newParts.length - 1] += " el";
+            }
+
+            rightParen = false;
+            if (part.substr(part.length - 1, 1) == ")") {
+                // remember that the right parenthesis must be skipped
+                rightParen = true;
+                part = part.substr(0, part.length - 1);
+                nextParenLevel = parenLevel - 1;
+            } else {
+                nextParenLevel = parenLevel;
+            }
+
+            if (parenLevel > 0) {
+                // append to previous part
+                newParts[newParts.length - 1] += " " + part;
+            } else {
+                // make new part
+                newParts[newParts.length] = part;
+            }
+
+            if (rightParen) {
+                // now skip the right parenthesis, but start a new part
+                newParts[newParts.length] = "";
+            }
+
+            parenLevel = nextParenLevel;
+            previousPart = part;
+
+        }
+
+        // put full stop after each new part (to make a pause in the reading)
+        // TODO?: make a function for the below code? there's identical or similar code four places in this file
+
+        newText = "";
+        for (let i in newParts) {
+            // (also skip empty parts, just in case. but perhaps they don't occur)
+            if (newParts[i].trim() != "") {
+                newText += newParts[i] + ".";
+                if (i < newParts.length - 1) {
+                    newText += " ";
+                }
+            }
+        }
+
+        return newText;
+
+    } else {
+
+        // square brackets were not removed. must be an error.
+        // just return the text unchanged
+
+        return text;
+
+    }
+
+}
+
+function makeReadableSms(text) {
+
+    // handle "/" between alternatives.
+    // handle incomplete words.
+    // example: make
+    //   "fjellvandring -en/-a"
+    // into
+    //   "fjellvandring. fjellvandringen eller fjellvandringa."
+
+    const parts = text.split(" ");
+
+    let newParts = [];
+    let currentWord = "";
+    for (i in parts) {
+        let part = parts[i];
+        let subParts = part.split("/");
+        let newPartText = "";
+        for (let j in subParts) {
+            let subPart = subParts[j];
+            if (j > 0) {
+                newPartText += " eller ";
+            }
+            if (subPart.substr(0, 1) == "-") {
+                // incomplete word
+                // (can't remember if the inflect() function is necessary here,
+                // or if a simple concatenation will do.
+                // but it causes no harm)
+                subPart = inflect(currentWord, subPart.substr(1));
+            } else {
+                currentWord = subPart;
+            }
+            newPartText += subPart;
+        }
+        newParts[newParts.length] = newPartText;
+    }
+
+    // put full stop after each new part (to make a pause in the reading)
+
+    let newText = "";
+    for (let i in newParts) {
+        newText += newParts[i] + ".";
+        if (i < newParts.length - 1) {
+            newText += " ";
+        }
+    }
+
+    return newText;
+
+}
+
+function makeReadableOther(text) {
+
+    // handles other fields than 'lem', 'alt', 'mor' and 'sms'
+
+    // in the other fields parentheses should not be read,
+    // so this function removes all parentheses.
+    
+    // note: there is one exception - the 'def' field.
+    // but when this function is called,
+    // the 'def' case has already been handled:
+    // the parentheses characters have been replaced by something else
+    // with the changeLiteralParenthesesToText() function
+
+    let newText = text;
+
+    // remove all quotes to make text like the following example easier to handle and read:
+    // '(gjÃ¸re noe) mot bedre vitende ("(gjÃ¸re noe) selv om man vet at man ikke burde")'
+
+    newText = newText.replace(/"/g, "");
+
+    // make sure all left parentheses have space before them
+    // and all right parentheses have space after them
+
+    newText = newText.replace(/\(/g, " (");
+    newText = newText.replace(/\)/g, ") ");
+
+    // split the string at space(s) into separate words
+
+    const parts = newText.split(" ");
+
+    // handle parentheses
+
+    let newParts = [];
+    let parenLevel = 0;
+    let previousPart = "";
+    let part;
+    let RightParen;
+    let nextParenLevel;
+    for (let i in parts) {
+
+        part = parts[i];
+
+        if (part.substr(0, 1) == "(") {
+            // start a new part to make a pause.
+            // strip the left parenthesis
+            newParts[newParts.length] = "";
+            part = part.substr(1);
+            parenLevel += 1;
+        }
+
+        rightParen = false;
+        if (part.substr(part.length - 1, 1) == ")") {
+            // strip the right parenthesis.
+            // must start a new part to make a pause. see code below
+            rightParen = true;
+            part = part.substr(0, part.length - 1);
+            nextParenLevel = parenLevel - 1;
+        } else {
+            nextParenLevel = parenLevel;
+        }
+
+        // append to previous part
+        if (newParts.length == 0) {
+            newParts[0] = part;
+        } else {
+            newParts[newParts.length - 1] += " " + part;
+        }
+
+        if (rightParen) {
+            // now start a new part to make a pause
+            newParts[newParts.length] = "";
+        }
+
+        parenLevel = nextParenLevel;
+        previousPart = part;
+
+    }
+
+    // put full stop after each new part (to make a pause in the reading)
+
+    newText = "";
+    for (let i in newParts) {
+        // (also skip empty parts, just in case. but perhaps they don't occur)
+        if (newParts[i].trim() != "") {
+            newText += newParts[i] + ".";
+            if (i < newParts.length - 1) {
+                newText += " ";
+            }
+        }
+    }
+
+    return newText;
+
+}
+
+// this function handles the case with parentheses around the start or end of words.
+// examples:
+//   "(hus)dyret"
+//   "et lite (ferie)hus ute i fri natur"
+// in the history of LEXIN the case has been handled in two different ways:
+//   (1) in the beginning "(hus)dyret" was read as "husdyret"
+//   (2) later, and currently, it has been read as "dyret".
+// (admittedly the name of the function implies (1) and not (2). perhaps it should have been renamed.)
+// if there is a wish to revert to (1) use out-commented code below.
+function stripParenthesesInWords(text) {
+
+    let newText = text;
+
+    // handle parentheses at the start of words.
+    // it is assumed that the right parenthesis is followed by letter in the norwegian alphabet.
+    // (perhaps the "\w" regex pattern should have been used instead)
+    
+    //newText = newText.replace(/\((.*)\)([A-Za-zÃ†Ã˜Ã…Ã¦Ã¸Ã¥])/, "$1$2");   // (1)
+    newText = newText.replace(/\((.*)\)([A-Za-zÃ†Ã˜Ã…Ã¦Ã¸Ã¥])/, "$2");   // (2)
+
+    // handle parentheses at the end of words
+    // it is assumed that the left parenthesis is preceded by letter in the norwegian alphabet.
+    // (perhaps the "\w" regex pattern should have been used instead)
+
+    //newText = newText.replace(/([A-Za-zÃ†Ã˜Ã…Ã¦Ã¸Ã¥])\((.*)\)/, "$1$2");   // (1)
+    newText = newText.replace(/([A-Za-zÃ†Ã˜Ã…Ã¦Ã¸Ã¥])\((.*)\)/, "$1");   // (2)
+
+    return newText;
+
+}
+
+function stripVerticalBar(text) {
+
+    return text.replace(/\|/gi, "");
+
+}
+
+function stripTags(str) {
+
+    return str.replace(/<\/?[^>]+>/gi, "");
+
+}
+
+function expandAbbreviations(text) {
+
+    // change abbreviations used in LEXIN to the full form of the word(s)
+
+    let newText = text;
+
+    // abbreviations follow the start of text, space or left parenthesis,
+    // and are followed by space, the end of text, full stop, comma or right parenthesis
+
+    // note: some abbreviations have more than one full form,
+    // but this function knows only one full form,
+    // so sometimes a wrong form will be used
+
+    // note: it seems nynorsk isn't so well handled
+
+    newText = newText.replace(/(^| |\()bl a( |$|\.|,|\))/g, "$1blant annet$2");   // blant andre
+    newText = newText.replace(/(^| |\()ca( |$|\.|,|\))/g, "$1circa$2");   // omtrent
+    newText = newText.replace(/(^| |\()dvs( |$|\.|,|\))/g, "$1det vil si$2");
+    newText = newText.replace(/(^| |\()e l( |$|\.|,|\))/g, "$1eller lignende$2");
+    newText = newText.replace(/(^| |\()el( |$|\.|,|\))/g, "$1eller$2");
+    newText = newText.replace(/(^| |\()f eks( |$|\.|,|\))/g, "$1for eksempel$2");
+    newText = newText.replace(/(^| |\()f o m( |$|\.|,|\))/g, "$1fra og med$2");
+    newText = newText.replace(/(^| |\()jf( |$|\.|,|\))/g, "$1jamfÃ¸r$2");
+    newText = newText.replace(/(^| |\()kl( |$|\.|,|\))/g, "$1klokka$2");   // klokken
+    newText = newText.replace(/(^| |\()kr( |$|\.|,|\))/g, "$1kroner$2");
+    newText = newText.replace(/(^| |\()m fl( |$|\.|,|\))/g, "$1med flere$2");
+    newText = newText.replace(/(^| |\()m m( |$|\.|,|\))/g, "$1med mer$2");
+    newText = newText.replace(/(^| |\()o a( |$|\.|,|\))/g, "$1og annet$2");   // og andre
+    newText = newText.replace(/(^| |\()o l( |$|\.|,|\))/g, "$1og lignende$2");
+    newText = newText.replace(/(^| |\()osv( |$|\.|,|\))/g, "$1og sÃ¥ videre$2");
+    newText = newText.replace(/(^| |\()pga( |$|\.|,|\))/g, "$1pÃ¥ grunn av$2");
+    newText = newText.replace(/(^| |\()t o m( |$|\.|,|\))/g, "$1til og med$2");
+    // do the following replacement late.
+    // the abbreviation "m" for metres follows number and space
+    newText = newText.replace(/([0-9] )m( |$|\.|,|\))/g, "$1meter$2");
+
+    return newText;
+
+}
+
+// this function changes any remaining parenthesis characters
+// to a readable version.
+//
+// but is this function really necessary?
+// perhaps not. when this function is called,
+// presumably all parenthesis characters have been removed from the text,
+// or been replaced by some text.
+//
+// but if parenthesis characters do remain -
+// couldn't the speech synthesis have read them instead?
+// yes. but perhaps the programmer saw a reason to have
+// a particular text instead of what the speech synthesis would use.
+//
+// anyway - this function should cause no harm,
+// as long as it is called after all other parenthesis handling
+function makeReadableParentheses(text, lang) {
+
+    let newText = text;
+
+    // (same text for both nynorsk and bokmÃ¥l)
+    if (lang == "nn") {
+        newText = newText.replace(/\(/g, " parentes start ");
+        newText = newText.replace(/\)/g, " parentes slutt ");
+    } else {
+        newText = newText.replace(/\(/g, " parentes start ");
+        newText = newText.replace(/\)/g, " parentes slutt ");
+    }
+
+    return newText;
+
+}
+
+function extractAndCleanFieldValue(fieldEl) {
+
+    let content = fieldEl.innerHTML;
+    // strip extra whitespace (i.e, multiple ones and leading/trailing ones)
+    content = content.replace(/\s+/g, " ").trim();
+    let origContent = content;   // TODO: remove this line when satisfied with testing
+    // kill &nbsp;
+    content = content.replace('&nbsp;', ' ');
+    // convert some tags to text
+    content = content.replace('<span class="pipe-class"></span>', '|');
+    // strip other tags
+    let text = stripTags(content).trim();
+
+    //return text
+    return {text, origContent};   // TODO: when satisfied with testing use the above out-commented line instead
+
+}
+
+// main function.
+// called from the clicked element
+function tts(clickedEl) {
+
+    // the user clicked a speaker icon (an <img> element>).
+    // now the text of the associated field should be read
+
+    // first go in the parent direction and find the <div> element for the field.
+    // this <div> element should have
+    // - a "data-type" attribute containing a code for the field type
+    // - a "lang" attribute containing an iso language code
+
+    let node_ = clickedEl.closest('dd[data-type]');
+    
+    if (node_ == null) {
+
+        // TODO: how handle this error?
+        console.error("error. can't find the <div> for the clicked field");
+
+    } else {
+
+        // found the <div>
+
+        let fieldEl = node_;
+
+        // extract the necessary attributes
+
+        let type = fieldEl.getAttribute("data-type").toLowerCase();
+        let lang = fieldEl.getAttribute("lang");
+
+        // at the time of writing there's an error in the html:
+        // sometimes the "SMS" field has a type code value of "sms" or "sms1".
+        // presumably it's an error in the code that generates the html
+        // and not an error in the database itself.
+        // "sms" does no harm since this script converts all field type codes to lowercase.
+        // but "sms1" must be corrected.
+        // fix the error here
+        if (type == "sms1") {
+            type = "sms";
+        }
+
+        // set language code for leseweb (the speech synthesis system).
+        // kill language codes for other languages than bokmÃ¥l and nynorsk
+        if (lang == "nb") {
+            // bokmÃ¥l. leseweb uses "no" for bokmÃ¥l
+            leseWEBlang = "no";
+        } else if (lang == "nn") {
+            // nynorsk. leseweb uses "nn" for nynorsk
+            leseWEBlang = "nn";
+        } else {
+            // uninteresting language. we only read bokmÃ¥l and nynorsk
+            lang = "";
+            leseWEBlang = "";
+        }
+
+        // extract the text and do some general cleanup
+        //let text = extractAndCleanFieldValue(fieldEl);
+        let {text, origContent} = extractAndCleanFieldValue(fieldEl); let origText = text;   // TODO: when satisfied with testing use the above out-commented line instead
+
+        // make a readable version of the text.
+        // how to do that depends on the type of field 
+
+        if (type == "mor") {
+
+            // make readable text
+            text = makeReadableMor(fieldEl, lang, text);
+
+        } else {
+
+            // handle parentheses around the start or end of words.
+            // must do this early, before other kinds of parentheses are handled
+            text = stripParenthesesInWords(text);
+
+            // change literal parentheses,
+            // i.e, parentheses that are talked about in the text,
+            // to some text that can be read.
+            // assume all parentheses in the 'def' fields are literal parentheses,
+            // and that literal parentheses don't occur in other fields
+            if (type == "def") {
+                text = changeLiteralParenthesesToText(lang, text);
+            }
+
+            // change some constructions where explanations are shown in parentheses
+            text = changeCertainQuotesInParenthesesToText(lang, text);
+
+            // make readable text
+            if ((type == "lem") || (type == "alt")) {
+                text = makeReadableLemAlt(text);
+            } else if (type == "sms") {
+                text = makeReadableSms(text);
+            } else {
+                text = makeReadableOther(text);
+            }
+
+        }
+
+        // do some more cleanup and conversion
+        text = stripVerticalBar(text);
+        text = expandAbbreviations(text);
+        text = makeReadableParentheses(text, lang);
+
+        // TODO: remove the following when satisfied with testing the readable text
+        //console.log('------------------------------------------------------------------------');
+        //console.log('html content of the div:', origContent.replace('<img alt="Ikon for Ã¥ spille av talesyntese" src="/images/speaker-small.png" onclick="javascript:tts(this);" class="pointer">', ''));
+        //console.log('');
+        //console.log('original text:', origText);
+        //console.log('');
+        //console.log('field type:', type);
+        //console.log('language:', lang, '->', leseWEBlang);
+        //console.log('text to be read:', text);
+        //return;
+        // TODO contd: remove until here
+
+        // put the text in the hidden element where it will be read from
+        
+        readableEl = document.getElementById(readableElId);
+        readableEl.innerHTML = '<span lang="' + leseWEBlang + '">' + text + '</span>';
+
+        // read the text
+
+        //vFact_playsection(readableElId);
+		vFact_playsection_or_selection(readableElId);
+
+    }
+
+}
